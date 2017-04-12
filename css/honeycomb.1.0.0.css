@@ -1,0 +1,26 @@
+#hc_event_list {
+	margin-top: 15px ;
+}
+	#hc_event_list .hc_event_item {
+		margin-bottom: 15px ;
+	}
+		.hc_event_item p {
+			font-size: 13px ;
+			line-height: 160% ;
+		}
+	#hc_event_list b a {
+		color: rgb(201,82,60) ;
+	}
+	.hc_event_item_date {
+	}
+	#hc_event_list .hc_event_item.happening {
+		margin-bottom: 20px ;
+	}
+	#hc_event_list .hc_event_item.happening .HappeningDescription {
+		margin-top: 5px ;
+		padding: 4px 0 4px 10px ;
+		font-size: 12px ;
+		background-color: #bcd6f6 ;
+		border-radius: 10px ;
+		-moz-border-radius: 10px ;
+	}

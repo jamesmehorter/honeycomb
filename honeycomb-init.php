@@ -1159,7 +1159,7 @@
 						//Output each event item div / content
 						?>
 							<div class="hc_event_item<?php echo $hc_event_class ;?>">
-								<span class='hc_event_item_date'><b><?php echo $hc_event_date ;?></b></span>
+								<!--<span class='hc_event_item_date'><b><?php echo $hc_event_date ;?></b></span>-->
 								<b><a href="<?php echo $hc_events[$i]['hc_event_url'];?>"><?php echo $hc_events[$i]['post_title'] ;?></a></b>
                                 <br />
 								<p><?php echo $hc_event_description ;?></p>

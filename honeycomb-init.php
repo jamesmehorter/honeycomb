@@ -968,89 +968,114 @@
 		//If it is we want to select event posts from the current blog only	
 		if ( is_multisite() ) { $posts_table = "wp_" . $blog_id . "_posts"; } 
 		else { $posts_table = "wp_posts"; }
+
 		//Select all event posts
-		$hc_event_posts = $wpdb->get_results("SELECT * FROM " . $posts_table . " WHERE post_type = 'hc_events' AND post_status = 'publish'", ARRAY_A);
+		//$hc_event_posts = $wpdb->get_results("SELECT * FROM " . $posts_table . " WHERE post_type = 'hc_events' AND post_status = 'publish'", ARRAY_A);
+
+		$args =  [
+			// fetch events up to a year old
+			// and a year into the future
+			'meta_query' => [
+				[
+					'key' => 'hc_event_start',
+					'value' => strtotime( '-1 year' ),
+					'compare' => '>=',
+				],
+				[
+					'key' => 'hc_event_start',
+					'value' => strtotime( '+1 year' ),
+					'compare' => '<=',
+				]
+			],
+			'post_type' => 'hc_events',
+			'post_status' => 'publish',
+			'posts_per_page' => 100,
+		];
+		$events = get_posts( $args );
 		
-		//echo "\nBEGIN COUNT:" . count($hc_event_posts);
+		//echo "\nBEGIN COUNT:" . count($events);
 		$hc_event_recurrance_posts = array();
 		//Select all event post associated meta data (event settings like start, end, color, allday, and recurrance settings)
-		foreach ($hc_event_posts as $key => &$hc_event_post) {
+		foreach ($events as $key => $event) {
+
+			$hc_event_posts[$key]['ID'] = $event->ID;
+			$hc_event_posts[$key]['post_title'] = $event->post_title;
+			$hc_event_posts[$key]['post_author'] = $event->post_author;
+
 			//We will be compiling an array of all the event start dates
-			$hc_event_post['hc_event_start'] = get_post_meta($hc_event_post['ID'], 'hc_event_start', true);
-			$hc_event_post['hc_event_end'] = get_post_meta($hc_event_post['ID'], 'hc_event_end', true);
-			$hc_event_post['hc_event_category_color'] = get_post_meta($hc_event_post['ID'], 'hc_event_category_color', true);
-			if ($hc_event_post['hc_event_category_color'] == "" || !$hc_event_post['hc_event_category_color']) {
-				if ($terms = get_the_terms($post->ID, 'hc_event_categories')) {
-					$hc_event_post['hc_event_category_color'] = $terms[0]->term_id;
+			$hc_event_posts[ $key ]['hc_event_start'] = get_post_meta($event->ID, 'hc_event_start', true);
+			$hc_event_posts[ $key ]['hc_event_end'] = get_post_meta($event->ID, 'hc_event_end', true);
+			$hc_event_posts[ $key ]['hc_event_category_color'] = get_post_meta($event->ID, 'hc_event_category_color', true);
+			if ($hc_event_posts[ $key ]['hc_event_category_color'] == "" || !$hc_event_posts[ $key ]['hc_event_category_color']) {
+				if ($terms = get_the_terms($event->ID, 'hc_event_categories')) {
+					$hc_event_posts[ $key ]['hc_event_category_color'] = $terms[0]->term_id;
 				}
 			}
-			$hc_event_post['hc_event_color'] = get_post_meta($hc_event_post['ID'], 'hc_event_color', true);
-			$hc_event_post['hc_event_allday'] = get_post_meta($hc_event_post['ID'], 'hc_event_allday', true);
-			$hc_event_post['hc_event_recurrance'] = get_post_meta($hc_event_post['ID'], 'hc_event_recurrance', true);
-			$hc_event_post['hc_event_allow_paying'] = get_post_meta($hc_event_post['ID'], 'hc_event_allow_paying', true);
-			$hc_event_post['hc_event_amount'] = get_post_meta($hc_event_post['ID'], 'hc_event_amount', true);
-			$hc_event_post['hc_event_allow_paying_until'] = get_post_meta($hc_event_post['ID'], 'hc_event_allow_paying_until', true);
-			$hc_event_post['hc_event_second_amount'] = get_post_meta($hc_event_post['ID'], 'hc_event_second_amount', true);
-			$hc_event_post['hc_event_second_allow_paying_until'] = get_post_meta($hc_event_post['ID'], 'hc_event_second_allow_paying_until', true);
-			$hc_event_post['hc_event_paper_registration'] = get_post_meta($hc_event_post['ID'], 'hc_event_paper_registration', true);
-			
+			$hc_event_posts[ $key ]['hc_event_color'] = get_post_meta($event->ID, 'hc_event_color', true);
+			$hc_event_posts[ $key ]['hc_event_allday'] = get_post_meta($event->ID, 'hc_event_allday', true);
+			$hc_event_posts[ $key ]['hc_event_recurrance'] = get_post_meta($event->ID, 'hc_event_recurrance', true);
+			$hc_event_posts[ $key ]['hc_event_allow_paying'] = get_post_meta($event->ID, 'hc_event_allow_paying', true);
+			$hc_event_posts[ $key ]['hc_event_amount'] = get_post_meta($event->ID, 'hc_event_amount', true);
+			$hc_event_posts[ $key ]['hc_event_allow_paying_until'] = get_post_meta($event->ID, 'hc_event_allow_paying_until', true);
+			$hc_event_posts[ $key ]['hc_event_second_amount'] = get_post_meta($event->ID, 'hc_event_second_amount', true);
+			$hc_event_posts[ $key ]['hc_event_second_allow_paying_until'] = get_post_meta($event->ID, 'hc_event_second_allow_paying_until', true);
+			$hc_event_posts[ $key ]['hc_event_paper_registration'] = get_post_meta($event->ID, 'hc_event_paper_registration', true);
+
 			//We'll use this for key-matching below to sort our events array by start date
-			$hc_event_start_dates[] = $hc_event_post['hc_event_start'];				
+			$hc_event_start_dates[] = $hc_event_posts[ $key ]['hc_event_start'];
 			
-			if ($hc_event_post['post_excerpt'] != "") {
-				$hc_event_post['hc_event_post_summary'] = $hc_event_post['post_excerpt'];
+			if ($hc_event_posts[ $key ]['post_excerpt'] != "") {
+				$hc_event_posts[ $key ]['hc_event_post_summary'] = $hc_event_posts[ $key ]['post_excerpt'];
 			} else {
-				if ($hc_event_post['post_content'] != "") {
-					$hc_event_post['hc_event_post_summary'] = substr(str_replace("\r\n", "", strip_tags($hc_event_post['post_content'])), 0, 100) . ' ...';
+				if ($hc_event_posts[ $key ]['post_content'] != "") {
+					$hc_event_posts[ $key ]['hc_event_post_summary'] = substr(str_replace("\r\n", "", strip_tags($hc_event_posts[ $key ]['post_content'])), 0, 100) . ' ...';
 				} else {
-					$hc_event_post['hc_event_post_summary'] = "";
+					$hc_event_posts[ $key ]['hc_event_post_summary'] = "";
 				}
 			}
 			//Gather the event post url
-			$hc_event_post['hc_event_url'] = get_permalink($hc_event_post['ID']);
+			$hc_event_posts[ $key ]['hc_event_url'] = get_permalink($event->ID);
 			//Gather the event post terms
-			$hc_event_terms_obj = wp_get_object_terms($hc_event_post['ID'], 'hc_event_categories');
+			$hc_event_terms_obj = wp_get_object_terms($event->ID, 'hc_event_categories');
 			//We only want the term names
 			$hc_event_terms = array();
 			foreach ($hc_event_terms_obj as $hc_event_term) { $hc_event_terms[] = $hc_event_term->name; }
 			//Lets complie our terms into a comma delimited string for transportation and presentation
-			$hc_event_post['hc_event_terms'] = implode(', ', $hc_event_terms);
+			$hc_event_posts[ $key ]['hc_event_terms'] = implode(', ', $hc_event_terms);
 			//We need to make sure we're passing an int for the allday flag
-			$hc_event_post['hc_event_allday'] = intval($hc_event_post["hc_event_allday"]);
+			$hc_event_posts[ $key ]['hc_event_allday'] = intval($hc_event_posts[ $key ]["hc_event_allday"]);
 			//We need to add the event class name
-			$hc_event_post['hc_event_classname'] = "hc_event_event-" . $hc_event_post['ID'];
-			
-			
+			$hc_event_posts[ $key ]['hc_event_classname'] = "hc_event_event-" . $event->ID;
 			
 			//If the recurrance field holds a serialized array of recurrance data (interval, frequency, and offset)
 			//This conditional will create new singular event for each recurrance date
 			//Each recurring group will all have the same ID so the calendar can treat them as one and relocate the group is desired
-			if (is_array($hc_event_post['hc_event_recurrance'])) {
+			if (is_array($hc_event_posts[ $key ]['hc_event_recurrance'])) {
 				//Use the 'When' library to generate our start and end recurrance dates				
 				require_once "php/When v3/When.php";
 				//Generate the recurring event start dates
-				$hc_event_datetime_event_start = new DateTime(date("Y-m-d H:i:s", $hc_event_post['hc_event_start']));
+				$hc_event_datetime_event_start = new DateTime(date("Y-m-d H:i:s", $hc_event_posts[ $key ]['hc_event_start']));
 				$hc_event_start_datetimes = new When();
-				$hc_event_start_datetimes->recur($hc_event_datetime_event_start, $hc_event_post['hc_event_recurrance']['hc_event_frequency']);
-				$hc_event_start_datetimes->count($hc_event_post['hc_event_recurrance']['hc_event_interval'] + 1);
+				$hc_event_start_datetimes->recur($hc_event_datetime_event_start, $hc_event_posts[ $key ]['hc_event_recurrance']['hc_event_frequency']);
+				$hc_event_start_datetimes->count($hc_event_posts[ $key ]['hc_event_recurrance']['hc_event_interval'] + 1);
 				$hc_event_start_date_timestamps = array();
 				while($result = $hc_event_start_datetimes->next()) {
-					//start_date_timestamps is now an array containing our new reccurrance date start times					
+					//start_date_timestamps is now an array containing our new reccurrance date start times
 					$hc_event_start_date_timestamps[] = $result->format('U');
 				}
 				//Generate the recurring event end dates
-				$hc_event_datetime_event_end = new DateTime(date("Y-m-d H:i:s", $hc_event_post['hc_event_end']));
+				$hc_event_datetime_event_end = new DateTime(date("Y-m-d H:i:s", $hc_event_posts[ $key ]['hc_event_end']));
 				$hc_event_end_datetimes = new When();
-				$hc_event_end_datetimes->recur($hc_event_datetime_event_end, $hc_event_post['hc_event_recurrance']['hc_event_frequency']);
-				$hc_event_end_datetimes->count($hc_event_post['hc_event_recurrance']['hc_event_interval'] + 1);
+				$hc_event_end_datetimes->recur($hc_event_datetime_event_end, $hc_event_posts[ $key ]['hc_event_recurrance']['hc_event_frequency']);
+				$hc_event_end_datetimes->count($hc_event_posts[ $key ]['hc_event_recurrance']['hc_event_interval'] + 1);
 				$hc_event_end_date_timestamps = array();
 				while($result = $hc_event_end_datetimes->next()) {
 					//end_date_timestamps is now an array containing our new reccurrance date end times
 					$hc_event_end_date_timestamps[] = $result->format('U');
-					//echo $i."~";
 				}
+
 				//Generate the new additional events to plot onto the calendar
-				for ($i = 1; $i < $hc_event_post['hc_event_recurrance']['hc_event_interval'] + 1; $i++) {
+				for ($i = 1; $i < $hc_event_posts[ $key ]['hc_event_recurrance']['hc_event_interval'] + 1; $i++) {
 					//Add onto our rolling start date list with this new event
 					$hc_event_start_dates[] = $hc_event_start_date_timestamps[$i];	
 					//Build each new occurance of thsi event

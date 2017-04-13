@@ -62,8 +62,6 @@
 		//Our calendar needs a slimed down array, with on specific event data. 
 		$hc_events = request_all_events();
 		
-		//print_r($hc_events);
-		
 		foreach ($hc_events as $i => $hc_event) {
 			$hc_events_out[$i]['id'] 			= $hc_event['ID'];
 			$hc_events_out[$i]['title'] 		= $hc_event['post_title'];

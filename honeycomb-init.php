@@ -1202,7 +1202,7 @@
 	//Display a list of event types(taxonomy) with links to their pages
 	function Display_Event_Categories_List_Shortcode ($atts) {
 		//Determine if the user set a length
-		if (!$atts['length']) { $length = 255; } 
+		if ( empty( $atts['length'] ) ) { $length = 255; }
 		else { $length = $atts['length']; }
 		return Display_Event_Type_List($length);
 	}// End Display_Event_Type_List

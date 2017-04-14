@@ -1003,8 +1003,8 @@
 			$hc_event_posts[$key]['post_author'] = $event->post_author;
 
 			//We will be compiling an array of all the event start dates
-			$hc_event_posts[ $key ]['hc_event_start'] = get_post_meta($event->ID, 'hc_event_start', true);
-			$hc_event_posts[ $key ]['hc_event_end'] = get_post_meta($event->ID, 'hc_event_end', true);
+			$hc_event_posts[ $key ]['hc_event_start'] = intval( get_post_meta($event->ID, 'hc_event_start', true) );
+			$hc_event_posts[ $key ]['hc_event_end'] = intval( get_post_meta($event->ID, 'hc_event_end', true) );
 			$hc_event_posts[ $key ]['hc_event_category_color'] = get_post_meta($event->ID, 'hc_event_category_color', true);
 			if ($hc_event_posts[ $key ]['hc_event_category_color'] == "" || !$hc_event_posts[ $key ]['hc_event_category_color']) {
 				if ($terms = get_the_terms($event->ID, 'hc_event_categories')) {
@@ -1087,8 +1087,8 @@
 						'hc_event_color' => $hc_event_posts[$key]['hc_event_color'],
 						'hc_event_category_color' => $hc_event_posts[$key]['hc_event_category_color'],
 						'hc_event_classname' => "hc_event_event-" . $hc_event_posts[$key]['ID'],
-						'hc_event_start' => $hc_event_start_date_timestamps[$i],
-						'hc_event_end' => $hc_event_end_date_timestamps[$i],
+						'hc_event_start' => intval( $hc_event_start_date_timestamps[$i] ),
+						'hc_event_end' => intval( $hc_event_end_date_timestamps[$i] ),
 						'hc_event_allday' => $hc_event_posts[$key]['hc_event_allday'],
 						'hc_event_recurrance' => "child-" . $i,
 						'hc_event_url' => $hc_event_posts[$key]['hc_event_url']
@@ -1098,9 +1098,9 @@
 		}//END FOREACH EVENT POSTS
 		
 		//Merge our new recurring events onto the repo event bin
-		$hc_event_posts = array_merge((array)$hc_event_posts, (array)$hc_event_recurrance_posts);
+		$hc_event_posts = array_merge( $hc_event_posts, $hc_event_recurrance_posts );
 	
-		/*		
+		/*
 		//Filter our list of events by any terms passed into this functions
 		if (is_array($filterTerms)) {
 			$addedEvent = false;
@@ -1117,11 +1117,11 @@
 		//If terms were used to filter the event results, we want to convert our $hc_event_posts arr to only contain filtered results
 		if (is_array($filterTerms)) { $hc_event_posts = $e; }
 		*/
-		
-		//echo " - END - " . count($hc_event_posts) . " - " . count($hc_event_start_dates);
-		
-		//Sort all events by their start dates so they are in chronological order
-		array_multisort($hc_event_start_dates, $hc_event_posts);
+
+		usort( $hc_event_posts, function( $a, $b ) {
+			return ($a['hc_event_start'] < $b['hc_event_start']) ? -1 : (($a['hc_event_start'] > $b['hc_event_start']) ? 1 : 0);
+		} );
+
 		//Return all our individual events in a multi-dimensional array, sorted by their start dates DESC
 		return $hc_event_posts;
 	} // End function request_all_events
@@ -1137,18 +1137,17 @@
 	function Display_List_Of_Events ($hc_event_terms='', $hc_event_limit=1) {
 		global $hc_plugin_url;
 		$hc_events = request_all_events($hc_event_terms);
+
 		//Filter our events list down to only future and happening events
 		//Add a flag for currently happening events
 		foreach($hc_events as $i => $hc_event) {
-			if ($hc_event['hc_event_start'] < time() && $hc_event['hc_event_end'] > time()) {
-				$hc_eventsArr[] = $hc_event;
-				$hc_eventsArr[count($hc_eventsArr) - 1]['hc_event_happening'] = true;
-			}
 			if ($hc_event['hc_event_start'] > time()) {
-				$hc_eventsArr[] = $hc_event;
+				$hc_eventsArr[$i] = $hc_event;
 			}
 		}
-		$hc_events = $hc_eventsArr;
+
+
+		$hc_events = array_values( $hc_eventsArr );
 		//Output our upcoming events container div
 		?>
         <link rel='stylesheet' type='text/css' href='<?php echo $hc_plugin_url; ?>/css/honeycomb.1.0.0.css' />
@@ -1184,7 +1183,7 @@
 						//Output each event item div / content
 						?>
 							<div class="hc_event_item<?php echo $hc_event_class ;?>">
-								<!--<span class='hc_event_item_date'><b><?php echo $hc_event_date ;?></b></span>-->
+								<span class='hc_event_item_date'><b><?php echo $hc_event_date ;?></b></span>
 								<b><a href="<?php echo $hc_events[$i]['hc_event_url'];?>"><?php echo $hc_events[$i]['post_title'] ;?></a></b>
                                 <br />
 								<p><?php echo $hc_event_description ;?></p>
